@@ -1,1 +1,3 @@
 Click>=8.0
+requests~=2.26.0
+parsel~=1.6.0
