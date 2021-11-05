@@ -5,7 +5,7 @@
 import pytest
 from click.testing import CliRunner
 
-from asianbookie import asianbookie, cli  # noqa F401
+from asianbookie import cli
 
 
 @pytest.fixture
