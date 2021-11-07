@@ -1,4 +1,6 @@
+import locale
 import re
+from contextlib import contextmanager
 from typing import List, Optional
 from urllib.parse import parse_qs, urlencode, urlparse
 
@@ -29,3 +31,21 @@ def get_float_or_int(text: str) -> Optional[float]:
 def clean_text(text: str, include_texts: List[str]) -> str:
     pattern = r"[" + "".join(include_texts) + "]"
     return re.sub(pattern, "", text)
+
+
+def fill_recent_form(recent_form: List[str]) -> List[str]:
+    form_map = {"/iconwin.gif": "W", "/icondraw.gif": "D", "/iconlose.gif": "L"}
+    return list(map(lambda x: form_map.get(x), recent_form))
+
+
+@contextmanager
+def override_locale(category, locale_string):
+    prev_locale_string = locale.getlocale()
+    locale.setlocale(category, locale_string)
+    yield
+    locale.setlocale(category, prev_locale_string)
+
+
+@override_locale(locale.LC_ALL, "en_US.UTF8")
+def parse_balance_text(balance: str) -> float:
+    return locale.atof(balance.strip("AB$"))
