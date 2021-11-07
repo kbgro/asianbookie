@@ -21,8 +21,6 @@ class AsianBookieUser:
         self.recent_form: List[str] = []
         self.balance: float = 0.0
         self.followers: int = 0
-        self.current_winning_streak: int = 0
-        self.longest_winning_streak: int = 0
         self.current_losing_streak: int = 0
         self.longest_losing_streak: int = 0
         self.member_since: Optional[date] = None

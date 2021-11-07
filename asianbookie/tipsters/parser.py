@@ -1,6 +1,7 @@
 import math
 from collections import defaultdict
 from typing import Dict, List, Optional
+from unicodedata import normalize
 
 from parsel import Selector
 
@@ -10,6 +11,33 @@ from asianbookie.tipsters.user import AsianBookieUser
 
 class TipsterProfileParser:
     """Parse Tipster Profile"""
+
+    @staticmethod
+    def parse(html_text: str):
+        selector = Selector(html_text)
+        profile_td = selector.css(".lightblue td")
+        profile_td_texts = list(
+            filter(bool, map(lambda x: normalize("NFKD", x).strip(), profile_td.css("td::text").getall()))
+        )
+        b = profile_td.xpath(".//b")
+        name = profile_td.css("b>font::text").get()
+        followers = b[4].css("::text").get()
+        balance = b[6].css("font::text").get()
+        rank = int(profile_td_texts[1].split("of")[0].replace("#", "").strip())
+        recent_form = list(
+            filter(
+                lambda i: i.startswith("/icon"),
+                map(lambda x: normalize("NFKD", x).strip(), profile_td.css("td img::attr(src)").getall()),
+            )
+        )
+        recent_form = util.fill_recent_form(recent_form)
+        user = AsianBookieUser(name)
+        user.rank = rank
+        user.recent_form = recent_form
+        user.followers = followers
+        user.balance = util.parse_balance_text(balance)
+
+        return user
 
 
 class Top100TipsterParser:
@@ -42,9 +70,8 @@ class Top100TipsterParser:
         yield_ = util.get_float_or_int(table_data_list[7].css("::text").get().strip())
         current_winning_streak = util.get_float_or_int(table_data_list[8].css("span")[1].css("::text").get())
         longest_winning_streak = util.get_float_or_int(table_data_list[8].css("span")[-1].css("::text").get())
-        form_map = {"/iconwin.gif": "W", "/icondraw.gif": "D", "/iconlose.gif": "L"}
         recent_form = list(map(lambda x: x.attrib["src"], table_data_list[9].css("img")))
-        recent_form = list(map(lambda x: form_map.get(x), recent_form))
+        recent_form = util.fill_recent_form(recent_form)
         balance = util.parse_with_bold(table_data_list[10].css("font"))
         balance = util.get_float_or_int(util.clean_text(balance, [","]))
 
