@@ -10,6 +10,7 @@ from asianbookie.tipsters import (
     Top10LeagueTipsterParser,
     Top100TipsterParser,
 )
+from asianbookie.tipsters.parser import TipsterProfileParser
 
 
 @pytest.fixture
@@ -27,4 +28,11 @@ def test_top100_tipsters(response):
 def test_league_top10_tipsters(response):
     league_tipsters = Top10LeagueTipsterParser.parse_leagues(response.text)
     assert isinstance(league_tipsters, dict)
-    assert len(league_tipsters) == 20
+    assert len(league_tipsters) >= 20
+
+
+def test_tipster_profile():
+    response = requests.get("https://tipsters.asianbookie.com/index.cfm?player=kopikia&ID=382731")
+    user = TipsterProfileParser.parse(response.text)
+    assert isinstance(user, AsianBookieUser)
+    print(user.balance)
