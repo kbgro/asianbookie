@@ -15,10 +15,13 @@ def parse_player_url(url_text: str) -> str:
     return f"{parse_result.path}?{urlencode({'player': player, 'ID': _id})}"
 
 
-def parse_with_bold(selector: Selector) -> str:
-    win_percentage = selector.css("::text").get().strip()
-    if not win_percentage:
-        win_percentage = selector.css("b::text").get().strip()
+def parse_with_bold(selector: Selector) -> Optional[str]:
+    try:
+        win_percentage = selector.css("::text").get().strip()
+        if not win_percentage:
+            win_percentage = selector.css("b::text").get().strip()
+    except AttributeError:
+        return None
     return win_percentage
 
 
