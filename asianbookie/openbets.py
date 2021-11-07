@@ -16,6 +16,7 @@ class Bet:
     stake: float
     status: str
     league: str
+    is_big_bet: bool
 
 
 class OpenBetsParser:
@@ -23,10 +24,14 @@ class OpenBetsParser:
 
     @staticmethod
     def parse(html_text: str) -> List[Bet]:
+        bets = []
         selector = Selector(html_text)
         open_table = selector.css("table.altrow")[1]
+
+        if not OpenBetsParser.has_open_bets(open_table):
+            return bets
+
         open_table_tr = open_table.css("tr")[1:]
-        bets = []
         for tr in open_table_tr:
             td = tr.css("td")
             placed_at: str = util.parse_with_bold(td[0])
@@ -36,6 +41,7 @@ class OpenBetsParser:
             market: str = OpenBetsParser._parse_market(td[2])
             odds: float = float(td[5].css("font::text").get().strip())
             stake: float = util.parse_balance_text(td[4].css("font::text").get().strip())
+            is_big_bet: bool = "bigbet" in (td[4].css("img::attr(src)").get() or "")
             status: str = "STARTED" if td[6].css("font>span::text").get().strip() != "pending" else "PENDING"
 
             bet = Bet(
@@ -47,10 +53,16 @@ class OpenBetsParser:
                 status=status,
                 odds=odds,
                 league=league,
+                is_big_bet=is_big_bet,
             )
             bets.append(bet)
 
         return bets
+
+    @staticmethod
+    def has_open_bets(open_bet_table: Selector) -> bool:
+        first_tr = map(lambda x: x.strip(), open_bet_table.css("tr")[1].css("::text").getall())
+        return "currently no pending bets." not in "".join(first_tr)
 
     @staticmethod
     def _parse_underlined(selector: Selector) -> Optional[str]:
