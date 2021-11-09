@@ -3,12 +3,16 @@ from __future__ import annotations
 from datetime import date
 from typing import List, Optional
 
+from asianbookie import util
+
 
 class AsianBookieUser:
+    """Represents a User in AsianBookie.com"""
+
     def __init__(self, name):
-        self.name = name
-        self.url: Optional[str] = None
         self._id: Optional[str] = None
+        self._url = None
+        self.name = name
         self.rank: int = 0
         self.win: float = 0.0
         self.draw: float = 0.0
@@ -27,6 +31,29 @@ class AsianBookieUser:
 
     def __repr__(self):
         return f"< AsianBookieUser(name={self.name}, rank={self.rank}) >"
+
+    def __eq__(self, o: AsianBookieUser) -> bool:
+        if isinstance(o, AsianBookieUser) and o is not None:
+            return self.name == o.name and self.user_id == o.user_id
+        return False
+
+    def __hash__(self) -> int:
+        return hash((self.name, self.user_id))
+
+    @property
+    def user_id(self):
+        """Return User Id"""
+        return self._id
+
+    @property
+    def url(self):
+        """Return User URL"""
+        return self._url
+
+    @url.setter
+    def url(self, value):
+        self._url = value
+        self._id = util.parse_player_id_from_url(value)
 
     @classmethod
     def from_top10_league(cls, name: str, rank: int, url: str, balance: float) -> AsianBookieUser:
