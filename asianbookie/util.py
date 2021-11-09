@@ -15,6 +15,17 @@ def parse_player_url(url_text: str) -> str:
     return f"{parse_result.path}?{urlencode({'player': player, 'ID': _id})}"
 
 
+def parse_player_id_from_url(url_text: str) -> int:
+    """
+    Extract user id from user profile link
+
+    :param url_text: user link
+    :return: user id
+    """
+    parsed_qs = parse_qs(urlparse(url_text).query)
+    return int(parsed_qs.get("ID")[0])
+
+
 def parse_with_bold(selector: Selector) -> Optional[str]:
     try:
         win_percentage = selector.css("::text").get().strip()
