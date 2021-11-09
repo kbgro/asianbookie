@@ -29,8 +29,11 @@ class AsianBookieUser:
         self.longest_losing_streak: int = 0
         self.member_since: Optional[date] = None
 
+    def __str__(self):
+        return f"AsianBookieUser(name={self.name}, rank={self.rank})"
+
     def __repr__(self):
-        return f"< AsianBookieUser(name={self.name}, rank={self.rank}) >"
+        return f"< {self.__str__()} >"
 
     def __eq__(self, o: AsianBookieUser) -> bool:
         if isinstance(o, AsianBookieUser) and o is not None:
