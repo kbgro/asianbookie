@@ -1,16 +1,26 @@
 """Console script for asianbookie."""
-import sys
+import logging
 
 import click
 
+from asianbookie.asianbookie import AsianBookieOpenBets
+from asianbookie.settings import setup
 
-@click.command()
-def main(args=None):
-    """Console script for asianbookie."""
-    click.echo("Replace this message by putting your code into " "asianbookie.cli.main")
-    click.echo("See click documentation at https://click.palletsprojects.com/")
+setup()
+
+logger = logging.getLogger("asianbookie")
+
+
+@click.group()
+def asianbookie_cli():
+    """asianbookie cli"""
+
+
+@asianbookie_cli.command()
+def openbets():
+    """Fetched asianbookie open bets"""
+    logger.info("[*] Starting Application")
+    logger.info("[^] Searching for Open bets")
+    AsianBookieOpenBets().top_tipsters_open_bets()
+    logger.info("[*] Finishing Application")
     return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())  # pragma: no cover

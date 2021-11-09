@@ -35,7 +35,7 @@ setup(
     description="AsianBookie.com python api",
     entry_points={
         "console_scripts": [
-            "asianbookie=asianbookie.cli:main",
+            "asianbookie=asianbookie.cli:asianbookie_cli",
         ],
     },
     install_requires=requirements,
