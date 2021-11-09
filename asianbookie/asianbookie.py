@@ -64,7 +64,7 @@ class AsianBookieOpenBets:
             user_bets = self.get_user_open_bets(user.url)
             big_bets = list(filter(lambda ub: ub.is_big_bet, user_bets))
             if big_bets:
-                bets[str(user)] = [str(dc) for dc in big_bets]
+                bets[str(user)] = big_bets
 
             logger.debug(f"[R{index:>3d}] [{user.name}:{user.user_id}] : {user_bets}")
             logger.info(f"[R{index:>3d}] [{user.name}:{user.user_id}] : {len(user_bets):2d} bets")
@@ -72,7 +72,7 @@ class AsianBookieOpenBets:
 
             time.sleep(0.5)
 
-        logger.debug(f"{json.dumps(bets)}")
+        logger.debug(f"{json.dumps(bets, default=str)}")
 
         self.save_bets(bets)
         self.process_bets(bets)
@@ -96,9 +96,9 @@ class AsianBookieOpenBets:
         :param bets: open bets
         :return: user's Open bets
         """
-        filename = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + ".json"
+        filename = settings.DATA_DIR / time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + ".json"
         with open(filename, "w") as rf:
-            json.dump(bets, rf)
+            json.dump(bets, rf, default=str)
 
     @staticmethod
     def process_bets(bets: Dict[str, List]) -> None:
