@@ -59,16 +59,16 @@ class AsianBookieOpenBets:
         # get user bets
         bets = {}
         for index, user in enumerate(users):
-            logger.info(f"[R{index:>3d}] Collecting user bets for: [{user.name}:{user.user_id}]")
+            logger.info(f"[R {index:>3d}] Collecting user bets for: [{user.name}:{user.user_id}]")
 
             user_bets = self.get_user_open_bets(user.url)
             big_bets = list(filter(lambda ub: ub.is_big_bet, user_bets))
             if big_bets:
                 bets[str(user)] = big_bets
 
-            logger.debug(f"[R{index:>3d}] [{user.name}:{user.user_id}] : {user_bets}")
-            logger.info(f"[R{index:>3d}] [{user.name}:{user.user_id}] : {len(user_bets):2d} bets")
-            logger.info(f"[R{index:>3d}] [{user.name}:{user.user_id}] : {len(user_bets):2d} BIG BETS")
+            logger.debug(f"[R {index:>3d}] [{user.name}:{user.user_id}] : {user_bets}")
+            logger.info(f"[R {index:>3d}] [{user.name}:{user.user_id}] : {len(user_bets):2d} bets")
+            logger.info(f"[R {index:>3d}] [{user.name}:{user.user_id}] : {len(user_bets):2d} BIG BETS")
 
             time.sleep(0.5)
 
@@ -96,7 +96,7 @@ class AsianBookieOpenBets:
         :param bets: open bets
         :return: user's Open bets
         """
-        filename = settings.DATA_DIR / time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) + ".json"
+        filename = str(settings.DATA_DIR / time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())) + ".json"
         with open(filename, "w") as rf:
             json.dump(bets, rf, default=str)
 
@@ -109,12 +109,15 @@ class AsianBookieOpenBets:
         :return: user's Open bets
         """
         bet_markets = defaultdict(list)
+        bet_odds = defaultdict(set)
         for bet_list in bets.values():
             for bet in bet_list:
                 bet_markets[bet.teamA + " v " + bet.teamB].append(bet.market)
+                bet_odds[bet.teamA + " v " + bet.teamB].add(bet.odds)
 
         # most common
         for match, bet_m in bet_markets.items():
             mc = Counter(bet_m).most_common()
-            logger.debug(f"{match:>40} {mc}")
-            print(f"{match:>40} {mc}")
+            m_odds = list(bet_odds[match])
+            logger.debug(f"{match:>40} : {m_odds} {mc}")
+            print(f"{match:>40} : {m_odds} {mc}")
