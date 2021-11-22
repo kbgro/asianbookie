@@ -118,6 +118,5 @@ class AsianBookieOpenBets:
         # most common
         for match, bet_m in bet_markets.items():
             mc = Counter(bet_m).most_common()
-            m_odds = list(bet_odds[match])
-            logger.debug(f"{match:>40} : {m_odds} {mc}")
-            print(f"{match:>40} : {m_odds} {mc}")
+            logger.debug(f"{match:>40} : {mc}")
+            print(f"{match:>40} : {mc}")
