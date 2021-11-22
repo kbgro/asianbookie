@@ -2,6 +2,7 @@ import locale
 import re
 from contextlib import contextmanager
 from typing import List, Optional
+from unicodedata import normalize
 from urllib.parse import parse_qs, urlencode, urlparse
 
 from parsel import Selector
@@ -63,3 +64,13 @@ def override_locale(category, locale_string):
 @override_locale(locale.LC_ALL, "en_US.UTF8")
 def parse_balance_text(balance: str) -> float:
     return locale.atof(balance.strip("AB$"))
+
+
+def normalize_text(text: str) -> str:
+    return normalize("NFKD", text).strip()
+
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]  # noqa: E203
