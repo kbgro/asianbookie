@@ -4,8 +4,8 @@ from typing import Dict, List, Optional
 
 from parsel import Selector
 
-from asianbookie import util
-from asianbookie.user import AsianBookieUser
+from . import util
+from .user import AsianBookieUser
 
 
 class TipsterProfileParser:

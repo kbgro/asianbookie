@@ -6,7 +6,7 @@ from typing import List, Optional
 from dateutil.parser import parse
 from parsel import Selector
 
-from asianbookie import util
+from . import util
 
 
 @dataclass

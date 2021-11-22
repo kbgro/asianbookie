@@ -10,9 +10,9 @@ from typing import Dict, List, Optional
 import requests
 from requests import Response
 
-from asianbookie import settings, tipsters
-from asianbookie.openbets import Bet, OpenBetsParser
-from asianbookie.tipsters import AsianBookieUser
+from . import parser, settings
+from .openbets import Bet, OpenBetsParser
+from .user import AsianBookieUser
 
 logger = logging.getLogger("asianbookie")
 
@@ -25,7 +25,7 @@ def top100(response: Optional[Response] = None) -> List[AsianBookieUser]:
     """
     if response is None:
         response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
-    return tipsters.Top100TipsterParser.parse_top100(response.text)
+    return parser.Top100TipsterParser.parse_top100(response.text)
 
 
 def top10_leagues(response: Optional[Response] = None) -> Dict[str, List[AsianBookieUser]]:
@@ -36,7 +36,7 @@ def top10_leagues(response: Optional[Response] = None) -> Dict[str, List[AsianBo
     """
     if response is None:
         response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
-    return tipsters.Top10LeagueTipsterParser.parse_leagues(response.text)
+    return parser.Top10LeagueTipsterParser.parse_leagues(response.text)
 
 
 class AsianBookieOpenBets:

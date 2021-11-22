@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from parsel import Selector
 
-from asianbookie import util
+from . import util
 
 
 @dataclass
