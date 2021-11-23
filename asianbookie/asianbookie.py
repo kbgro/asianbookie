@@ -44,11 +44,12 @@ class AsianBookieOpenBets:
     Collects Open bets for all best tipsters.
     """
 
-    def __init__(self):
+    def __init__(self, top_tipsters: int = 50):
+        self.top_tipsters: int = top_tipsters
         self.top_tipsters_response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
 
     def top_tipsters_open_bets(self):
-        top50 = top100(self.top_tipsters_response)[:50]
+        top50 = top100(self.top_tipsters_response)[: self.top_tipsters]
         users = set()
         users.update(top50)
         for league in top10_leagues(self.top_tipsters_response).values():
@@ -116,6 +117,7 @@ class AsianBookieOpenBets:
                 bet_odds[bet.teamA + " v " + bet.teamB].add(bet.odds)
 
         # most common
+        print("[^] Open bets")
         for match, bet_m in bet_markets.items():
             mc = Counter(bet_m).most_common()
             logger.debug(f"{match:>40} : {mc}")
