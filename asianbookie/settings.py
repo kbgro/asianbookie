@@ -23,7 +23,7 @@ def setup_logger():
         format=format_str,
         datefmt="%m-%d %H:%M",
         filename=log_file,
-        filemode="w",
+        filemode="a+",
     )
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()

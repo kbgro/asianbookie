@@ -10,9 +10,9 @@ from typing import Dict, List, Optional
 import requests
 from requests import Response
 
-from asianbookie import settings, tipsters
-from asianbookie.openbets import Bet, OpenBetsParser
-from asianbookie.tipsters import AsianBookieUser
+from . import parser, settings
+from .openbets import Bet, OpenBetsParser
+from .user import AsianBookieUser
 
 logger = logging.getLogger("asianbookie")
 
@@ -25,7 +25,7 @@ def top100(response: Optional[Response] = None) -> List[AsianBookieUser]:
     """
     if response is None:
         response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
-    return tipsters.Top100TipsterParser.parse_top100(response.text)
+    return parser.Top100TipsterParser.parse_top100(response.text)
 
 
 def top10_leagues(response: Optional[Response] = None) -> Dict[str, List[AsianBookieUser]]:
@@ -36,7 +36,7 @@ def top10_leagues(response: Optional[Response] = None) -> Dict[str, List[AsianBo
     """
     if response is None:
         response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
-    return tipsters.Top10LeagueTipsterParser.parse_leagues(response.text)
+    return parser.Top10LeagueTipsterParser.parse_leagues(response.text)
 
 
 class AsianBookieOpenBets:
@@ -44,11 +44,12 @@ class AsianBookieOpenBets:
     Collects Open bets for all best tipsters.
     """
 
-    def __init__(self):
+    def __init__(self, top_tipsters: int = 50):
+        self.top_tipsters: int = top_tipsters
         self.top_tipsters_response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
 
     def top_tipsters_open_bets(self):
-        top50 = top100(self.top_tipsters_response)[:50]
+        top50 = top100(self.top_tipsters_response)[: self.top_tipsters]
         users = set()
         users.update(top50)
         for league in top10_leagues(self.top_tipsters_response).values():
@@ -116,8 +117,8 @@ class AsianBookieOpenBets:
                 bet_odds[bet.teamA + " v " + bet.teamB].add(bet.odds)
 
         # most common
+        print("[^] Open bets")
         for match, bet_m in bet_markets.items():
             mc = Counter(bet_m).most_common()
-            m_odds = list(bet_odds[match])
-            logger.debug(f"{match:>40} : {m_odds} {mc}")
-            print(f"{match:>40} : {m_odds} {mc}")
+            logger.debug(f"{match:>40} : {mc}")
+            print(f"{match:>40} : {mc}")

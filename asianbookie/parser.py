@@ -1,24 +1,21 @@
 import math
 from collections import defaultdict
 from typing import Dict, List, Optional
-from unicodedata import normalize
 
 from parsel import Selector
 
-from asianbookie import util
-from asianbookie.tipsters.user import AsianBookieUser
+from . import util
+from .user import AsianBookieUser
 
 
 class TipsterProfileParser:
     """Parse Tipster Profile"""
 
     @staticmethod
-    def parse(html_text: str):
+    def parse(html_text: str) -> AsianBookieUser:
         selector = Selector(html_text)
         profile_td = selector.css(".lightblue td")
-        profile_td_texts = list(
-            filter(bool, map(lambda x: normalize("NFKD", x).strip(), profile_td.css("td::text").getall()))
-        )
+        profile_td_texts = list(filter(bool, map(util.normalize_text, profile_td.css("td::text").getall())))
         b = profile_td.xpath(".//b")
         name = profile_td.css("b>font::text").get()
         followers = b[4].css("::text").get()
@@ -27,7 +24,7 @@ class TipsterProfileParser:
         recent_form = list(
             filter(
                 lambda i: i.startswith("/icon"),
-                map(lambda x: normalize("NFKD", x).strip(), profile_td.css("td img::attr(src)").getall()),
+                map(util.normalize_text, profile_td.css("td img::attr(src)").getall()),
             )
         )
         recent_form = util.fill_recent_form(recent_form)

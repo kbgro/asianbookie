@@ -5,12 +5,12 @@
 import pytest
 import requests
 
-from asianbookie.tipsters import (
-    AsianBookieUser,
+from asianbookie.parser import (
+    TipsterProfileParser,
     Top10LeagueTipsterParser,
     Top100TipsterParser,
 )
-from asianbookie.tipsters.parser import TipsterProfileParser
+from asianbookie.user import AsianBookieUser
 
 
 @pytest.fixture
@@ -35,4 +35,4 @@ def test_tipster_profile():
     response = requests.get("https://tipsters.asianbookie.com/index.cfm?player=kopikia&ID=382731")
     user = TipsterProfileParser.parse(response.text)
     assert isinstance(user, AsianBookieUser)
-    print(user.balance)
+    assert user.balance != 0

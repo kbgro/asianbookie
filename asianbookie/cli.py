@@ -3,8 +3,8 @@ import logging
 
 import click
 
-from asianbookie.asianbookie import AsianBookieOpenBets
-from asianbookie.settings import setup
+from .asianbookie import AsianBookieOpenBets
+from .settings import setup
 
 setup()
 
