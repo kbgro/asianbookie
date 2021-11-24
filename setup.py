@@ -11,7 +11,10 @@ with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
 requirements = [
-    "Click>=7.0",
+    "Click>=8.0",
+    "requests>=2.26.0",
+    "parsel>=1.6.0",
+    "python-dateutil>=2.8.2",
 ]
 
 test_requirements = [
