@@ -1,6 +1,6 @@
 import pytest
 
-from asianbookie.user import AsianBookieUser
+from asianbookie.domain import AsianBookieUser
 
 
 def test_user_equality():

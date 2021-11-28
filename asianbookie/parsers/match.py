@@ -1,28 +1,38 @@
 from collections import OrderedDict
-from dataclasses import dataclass
-from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Set
 
+import requests
 from dateutil.parser import parse
 from parsel import Selector
 
-from . import util
+from .. import settings, util
+from ..domain import Match
 
 
-@dataclass
-class Match:
-    league: str
-    away: str
-    home: str
-    ash_away: float
-    ash_home: float
-    ash_market: str
-    over: float
-    under: float
-    over_under_market: str
-    start: datetime
-    tz: Optional[str]
-    summary: dict
+def match_bets_user_ranks(match: Match) -> Set[int]:
+    """
+    Return user ranks for user with bets in this match.
+
+    :param match: Match object
+    :return: a set of user ranks
+    """
+    url = f"{settings.ASIAN_BOOKIE_URL}/matchstat.cfm?id={match.id}"
+    response = requests.get(url)
+    return MatchBetUsersParser.parse(response.text)
+
+
+class MatchBetUsersParser:
+    @classmethod
+    def parse(cls, html_text: str) -> Set[int]:
+        return set(
+            map(
+                int,
+                filter(
+                    lambda x: x.isdigit(),
+                    map(lambda s: s.get().strip().replace(".", ""), Selector(html_text).css("td>b>font::text")),
+                ),
+            )
+        )
 
 
 class MatchParser:
@@ -59,7 +69,7 @@ class MatchParser:
     def _extract_match(cls, table_selector: Selector, tz: Optional[str] = None) -> Match:
         table_row_selectors = table_selector.css("tr")
         # league
-        league = util.parse_with_bold(table_row_selectors[0].css("font")[1])
+        league = util.parse_with_bold(table_row_selectors[0].css("font")[1]) or ""
 
         # home, away teams
         normalized_it = map(lambda t: util.normalize_text(t), table_row_selectors[0].css("font::text").getall())
@@ -91,8 +101,31 @@ class MatchParser:
 
         # time
         start = list(filter(bool, map(util.normalize_text, table_row_selectors[11].css("::text").getall())))[0]
-        start = parse(start, fuzzy_with_tokens=True)[0]  # noqa
+        start_date = parse(start, fuzzy_with_tokens=True)[0]  # type: ignore # noqa
 
-        return Match(
-            league, away, home, ash_away, ash_home, ash_market, over, under, over_under_market, start, tz, summary
+        # stats
+        links = tuple(
+            filter(lambda a: a.startswith("/matchstat.cfm?id="), table_selector.css("a::attr(href)").getall())
         )
+        match_id = util.parse_match_id_from_url(links[0])
+        # match_stat_url = f"/matchstat.cfm?id={match_id}"
+        # match_ou_stat_url = f"/matchoustat.cfm?id={match_id}"
+
+        m = Match(
+            match_id,
+            league,
+            away,
+            home,
+            start_date,
+            ash_away=ash_away,
+            ash_home=ash_home,
+            ash_market=ash_market,
+            over=float(over),
+            under=float(under),
+            over_under_market=over_under_market,
+            tz=tz,
+            summary=summary
+            # match_stat_url=match_stat_url,
+            # match_ou_stat_url=match_ou_stat_url,
+        )
+        return m

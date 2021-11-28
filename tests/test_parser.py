@@ -5,12 +5,12 @@
 import pytest
 import requests
 
-from asianbookie.parser import (
+from asianbookie.domain import AsianBookieUser
+from asianbookie.parsers import (
     TipsterProfileParser,
     Top10LeagueTipsterParser,
     Top100TipsterParser,
 )
-from asianbookie.user import AsianBookieUser
 
 
 @pytest.fixture
