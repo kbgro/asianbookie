@@ -1,23 +1,40 @@
 """Main module."""
 from __future__ import annotations
 
-import json
 import logging
 import time
-from collections import Counter, defaultdict
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 import requests
 from requests import Response
 
-from . import parser, settings
-from .openbets import Bet, OpenBetsParser
-from .user import AsianBookieUser
+from . import parsers, settings
+from .domain import AsianBookieUser, Bet
 
 logger = logging.getLogger("asianbookie")
 
 
-def top100(response: Optional[Response] = None) -> List[AsianBookieUser]:
+def get_user_open_bets(user: AsianBookieUser) -> List[Bet]:
+    """
+    Get user open bets
+
+    :param user: AsianBookie user
+    :return: user's Open bets
+    """
+    response = requests.get(f"{settings.ASIAN_BOOKIE_URL}/{user.url}")
+    return parsers.OpenBetsParser.parse(response.text, user)
+
+
+def upcoming_matches():
+    """
+    Returns upcoming football matches
+    :return: a list of matches
+    """
+    response = requests.get(settings.ASIAN_BOOKIE_URL)
+    return parsers.MatchParser.parse(response.text)
+
+
+def top100_users(response: Optional[Response] = None) -> List[AsianBookieUser]:
     """
     Returns a list of top 100 Asian bookie users
 
@@ -25,7 +42,7 @@ def top100(response: Optional[Response] = None) -> List[AsianBookieUser]:
     """
     if response is None:
         response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
-    return parser.Top100TipsterParser.parse_top100(response.text)
+    return parsers.Top100TipsterParser.parse_top100(response.text)
 
 
 def top10_leagues(response: Optional[Response] = None) -> Dict[str, List[AsianBookieUser]]:
@@ -36,89 +53,29 @@ def top10_leagues(response: Optional[Response] = None) -> Dict[str, List[AsianBo
     """
     if response is None:
         response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
-    return parser.Top10LeagueTipsterParser.parse_leagues(response.text)
+    return parsers.Top10LeagueTipsterParser.parse_leagues(response.text)
 
 
-class AsianBookieOpenBets:
+def tipsters_open_bets(tipsters: Set[AsianBookieUser], sleep_time: float = 0.5) -> Dict[AsianBookieUser, List[Bet]]:
     """
-    Collects Open bets for all best tipsters.
+    Returns a dictionary of tipsters and a list of their open bets
+    :param sleep_time: wait time when fetching multiple users open bets
+    :param tipsters: a list of tipster to fetch open bets
+    :return: a dictionary of tipsters and a list of their open bets
     """
+    logger.info(f"Fetching bets for: {len(tipsters)} Users")
 
-    def __init__(self, top_tipsters: int = 50):
-        self.top_tipsters: int = top_tipsters
-        self.top_tipsters_response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
+    # get user bets
+    user_bets = {}
+    for index, user in enumerate(tipsters):
+        logger.info(f"[R {index:>3d}] Collecting user bets for: [{user.name}:{user.user_id}]")
 
-    def top_tipsters_open_bets(self):
-        top50 = top100(self.top_tipsters_response)[: self.top_tipsters]
-        users = set()
-        users.update(top50)
-        for league in top10_leagues(self.top_tipsters_response).values():
-            users.update(league)
+        user_bets[user] = get_user_open_bets(user)
 
-        logger.info(f"Fetching bets for: {len(users)} Users")
+        logger.debug(f"[R {index:>3d}] [{user.name}:{user.user_id}] : {user_bets}")
+        logger.info(f"[R {index:>3d}] [{user.name}:{user.user_id}] : {len(user_bets):2d} bets")
+        logger.info(f"[R {index:>3d}] [{user.name}:{user.user_id}] : {len(user_bets):2d} BIG BETS")
 
-        # get user bets
-        bets = {}
-        for index, user in enumerate(users):
-            logger.info(f"[R {index:>3d}] Collecting user bets for: [{user.name}:{user.user_id}]")
+        time.sleep(sleep_time)
 
-            user_bets = self.get_user_open_bets(user.url)
-            big_bets = list(filter(lambda ub: ub.is_big_bet, user_bets))
-            if big_bets:
-                bets[str(user)] = big_bets
-
-            logger.debug(f"[R {index:>3d}] [{user.name}:{user.user_id}] : {user_bets}")
-            logger.info(f"[R {index:>3d}] [{user.name}:{user.user_id}] : {len(user_bets):2d} bets")
-            logger.info(f"[R {index:>3d}] [{user.name}:{user.user_id}] : {len(user_bets):2d} BIG BETS")
-
-            time.sleep(0.5)
-
-        logger.debug(f"{json.dumps(bets, default=str)}")
-
-        self.save_bets(bets)
-        self.process_bets(bets)
-
-    @staticmethod
-    def get_user_open_bets(user_url: str) -> List[Bet]:
-        """
-        Get user open bets
-
-        :param user_url: user link url
-        :return: user's Open bets
-        """
-        response = requests.get(f"{settings.ASIAN_BOOKIE_URL}/{user_url}")
-        return OpenBetsParser.parse(response.text)
-
-    @staticmethod
-    def save_bets(bets: Dict[str, List]) -> None:
-        """
-        Get user open bets
-
-        :param bets: open bets
-        :return: user's Open bets
-        """
-        filename = str(settings.DATA_DIR / time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())) + ".json"
-        with open(filename, "w") as rf:
-            json.dump(bets, rf, default=str)
-
-    @staticmethod
-    def process_bets(bets: Dict[str, List]) -> None:
-        """
-        Get user open bets
-
-        :param bets: open bets
-        :return: user's Open bets
-        """
-        bet_markets = defaultdict(list)
-        bet_odds = defaultdict(set)
-        for bet_list in bets.values():
-            for bet in bet_list:
-                bet_markets[bet.teamA + " v " + bet.teamB].append(bet.market)
-                bet_odds[bet.teamA + " v " + bet.teamB].add(bet.odds)
-
-        # most common
-        print("[^] Open bets")
-        for match, bet_m in bet_markets.items():
-            mc = Counter(bet_m).most_common()
-            logger.debug(f"{match:>40} : {mc}")
-            print(f"{match:>40} : {mc}")
+    return user_bets
