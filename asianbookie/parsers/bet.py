@@ -1,30 +1,17 @@
-from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
 from parsel import Selector
 
-from . import util
-
-
-@dataclass
-class Bet:
-    placed_at: str
-    teamA: str
-    teamB: str
-    market: str
-    odds: float
-    stake: float
-    status: str
-    league: str
-    is_big_bet: bool
+from .. import util
+from ..domain import AsianBookieUser, Bet
 
 
 class OpenBetsParser:
     """Parse Tipster Profile"""
 
     @staticmethod
-    def parse(html_text: str) -> List[Bet]:
-        bets = []
+    def parse(html_text: str, user: AsianBookieUser) -> List[Bet]:
+        bets: List[Bet] = []
         selector = Selector(html_text)
         open_table = selector.css("table.altrow")[1]
 
@@ -45,16 +32,17 @@ class OpenBetsParser:
             status: str = "STARTED" if td[6].css("font>span::text").get().strip() != "pending" else "PENDING"
 
             bet = Bet(
-                placed_at=placed_at,
-                teamA=team_a,
-                teamB=team_b,
-                market=market,
-                stake=stake,
-                status=status,
-                odds=odds,
-                league=league,
-                is_big_bet=is_big_bet,
+                placed_at,
+                team_a,
+                team_b,
+                market,
+                odds,
+                stake,
+                status,
+                league,
+                is_big_bet,
             )
+            bet.user = user
             bets.append(bet)
 
         return bets
@@ -65,27 +53,27 @@ class OpenBetsParser:
         return "currently no pending bets." not in "".join(first_tr)
 
     @staticmethod
-    def _parse_underlined(selector: Selector) -> Optional[str]:
-        return selector.css("u::text").get().strip()
+    def _parse_underlined(selector: Selector) -> str:
+        return selector.css("u::text").get().strip() or ""
 
     @staticmethod
-    def _parse_team(selector: Selector) -> Optional[str]:
+    def _parse_team(selector: Selector) -> str:
         try:
             team = "".join([x.strip() for x in selector.css("font::text").getall() if x.strip()])
             if not team:
                 team = OpenBetsParser._parse_underlined(selector)
         except AttributeError:
-            return None
+            return ""
 
         return team
 
     @staticmethod
-    def _parse_market(selector: Selector) -> Optional[str]:
+    def _parse_market(selector: Selector) -> str:
         try:
             team = "".join(filter(bool, [x.strip() for x in selector.css("font::text").getall()]))
             if not team:
                 team = OpenBetsParser._parse_underlined(selector)
         except AttributeError:
-            return None
+            return ""
 
         return team

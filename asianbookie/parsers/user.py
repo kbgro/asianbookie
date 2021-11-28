@@ -1,11 +1,10 @@
-import math
 from collections import defaultdict
 from typing import Dict, List, Optional
 
 from parsel import Selector
 
-from . import util
-from .user import AsianBookieUser
+from .. import util
+from ..domain import AsianBookieUser
 
 
 class TipsterProfileParser:
@@ -52,7 +51,7 @@ class Top100TipsterParser:
     def parse_tipster_row(tr_selector: Selector) -> Optional[AsianBookieUser]:
         table_data_list = tr_selector.css("td")
         if len(table_data_list) < 2:
-            return
+            return None
 
         rank = table_data_list[0].css("font::text").get().split(".")[0]
         name = table_data_list[1].css("font>a::text").get()
@@ -60,23 +59,20 @@ class Top100TipsterParser:
         win = table_data_list[2].css("::text").get().strip()
         draw = table_data_list[3].css("::text").get().strip()
         loss = table_data_list[4].css("::text").get().strip()
-        win_percentage = util.parse_with_bold(table_data_list[5])
-        win_percentage = util.get_float_or_int(win_percentage) or math.nan
-        win_percentage_big_bet = util.parse_with_bold(table_data_list[6])
-        win_percentage_big_bet = util.get_float_or_int(win_percentage_big_bet) or math.nan
-        yield_ = util.get_float_or_int(table_data_list[7].css("::text").get().strip())
-        current_winning_streak = util.get_float_or_int(table_data_list[8].css("span")[1].css("::text").get())
-        longest_winning_streak = util.get_float_or_int(table_data_list[8].css("span")[-1].css("::text").get())
+        win_percentage = util.get_float_or_int(util.parse_with_bold(table_data_list[5])) or 0.0
+        win_percentage_big_bet = util.get_float_or_int(util.parse_with_bold(table_data_list[6])) or 0.0
+        yield_ = util.get_float_or_int(table_data_list[7].css("::text").get().strip()) or 0.0
+        current_winning_streak = util.get_float_or_int(table_data_list[8].css("span")[1].css("::text").get()) or 0.0
+        longest_winning_streak = util.get_float_or_int(table_data_list[8].css("span")[-1].css("::text").get()) or 0.0
         recent_form = list(map(lambda x: x.attrib["src"], table_data_list[9].css("img")))
         recent_form = util.fill_recent_form(recent_form)
-        balance = util.parse_with_bold(table_data_list[10].css("font"))
-        balance = util.get_float_or_int(util.clean_text(balance, [","]))
+        balance = util.get_float_or_int(util.clean_text(util.parse_with_bold(table_data_list[10].css("font")), [","]))
 
         return AsianBookieUser.from_top100(
             name,
-            rank,
-            util.parse_player_url(url),
-            balance,
+            int(rank),
+            util.parse_player_url(url) or "",
+            balance or 0.0,
             win=float(win),
             draw=float(draw),
             loss=float(loss),
@@ -110,10 +106,10 @@ class Top10LeagueTipsterParser:
         rank = table_data_list[0].css("span::text").get().split(".")[0]
         name = table_data_list[1].css("font>a::text").get().strip()
         url_text = table_data_list[1].css("font>a::attr(href)").get()
-        url = util.parse_player_url(url_text)
+        url = util.parse_player_url(url_text) or ""
         balance_text = list(
             filter(bool, map(lambda x: x.strip(), tr_selector.css("td")[2].css("font font::text").getall()))
         )[0]
-        balance = util.get_float_or_int(balance_text)
+        balance = util.get_float_or_int(balance_text) or 0.0
 
         return AsianBookieUser.from_top10_league(rank=int(rank), url=url, name=name, balance=balance)
