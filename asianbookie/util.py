@@ -1,7 +1,7 @@
 import locale
 import re
 from contextlib import contextmanager
-from typing import List, Optional
+from typing import Dict, List, Optional
 from unicodedata import normalize
 from urllib.parse import parse_qs, urlencode, urlparse
 
@@ -10,10 +10,12 @@ from parsel import Selector
 
 def parse_player_url(url_text: str) -> str:
     parse_result = urlparse(url_text)
-    parsed_qs = parse_qs(parse_result.query)
-    player = parsed_qs.get("player")[0]
-    _id = parsed_qs.get("ID")[0]
-    return f"{parse_result.path}?{urlencode({'player': player, 'ID': _id})}"
+    parsed_qs = parse_qs(parse_result.query)  # type: Dict[str, List[str]]
+    player = parsed_qs.get("player", [""])[0]
+    _id = parsed_qs.get("ID", [""])[0]
+    if player and _id:
+        return f"{parse_result.path}?{urlencode({'player': player, 'ID': _id})}"
+    return ""
 
 
 def parse_player_id_from_url(url_text: str) -> int:
@@ -24,16 +26,27 @@ def parse_player_id_from_url(url_text: str) -> int:
     :return: user id
     """
     parsed_qs = parse_qs(urlparse(url_text).query)
-    return int(parsed_qs.get("ID")[0])
+    return int(parsed_qs.get("ID", ["0"])[0])
 
 
-def parse_with_bold(selector: Selector) -> Optional[str]:
+def parse_match_id_from_url(url_text: str) -> int:
+    """
+    Extract user id from user profile link
+
+    :param url_text: user link
+    :return: user id
+    """
+    parsed_qs = parse_qs(urlparse(url_text).query)
+    return int(parsed_qs.get("id", ["0"])[0])
+
+
+def parse_with_bold(selector: Selector) -> str:
     try:
         win_percentage = selector.css("::text").get().strip()
         if not win_percentage:
             win_percentage = selector.css("b::text").get().strip()
     except AttributeError:
-        return None
+        return ""
     return win_percentage
 
 
@@ -41,6 +54,7 @@ def get_float_or_int(text: str) -> Optional[float]:
     found = re.findall(r"\d+\.?\d*", text)
     if found:
         return float(str(found[0]).strip())
+    return None
 
 
 def clean_text(text: str, include_texts: List[str]) -> str:
@@ -50,7 +64,7 @@ def clean_text(text: str, include_texts: List[str]) -> str:
 
 def fill_recent_form(recent_form: List[str]) -> List[str]:
     form_map = {"/iconwin.gif": "W", "/icondraw.gif": "D", "/iconlose.gif": "L"}
-    return list(map(lambda x: form_map.get(x), recent_form))
+    return list(map(lambda x: form_map[x], recent_form))
 
 
 @contextmanager
