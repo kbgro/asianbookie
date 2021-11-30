@@ -57,7 +57,8 @@ def matches():
     """Fetch asianbookie upcoming matches"""
 
     logger.info("[^] Searching for matches")
-    asianbookie.upcoming_matches()
+    for match in asianbookie.upcoming_matches():
+        logger.info(f"[>] {match}")
     logger.info("[*] Finishing Application")
     return 0
 
