@@ -3,6 +3,7 @@ import json
 import logging
 import time
 from collections import Counter, defaultdict
+from datetime import datetime
 from itertools import chain
 from typing import Dict, List, Optional, Set
 
@@ -58,6 +59,7 @@ def matches():
 
     logger.info("[^] Searching for matches")
     for match in asianbookie.upcoming_matches():
+        match.start = match.start + (datetime.now() - datetime.utcnow())
         logger.info(f"[>] {match}")
     logger.info("[*] Finishing Application")
     return 0

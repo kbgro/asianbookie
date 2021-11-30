@@ -169,7 +169,7 @@ class Match:
         self.bets: List[Bet] = []
 
     def __str__(self):
-        return f"Match({self.league}, {self.away}, {self.home}, {self.start})"
+        return f'Match({self.league}, {self.away}, {self.home}, {self.start.strftime("%d/%m/%y %H:%M")})'
 
     def __repr__(self):
         return f"< {self.__str__()} >"
