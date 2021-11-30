@@ -1,3 +1,4 @@
+import datetime
 from collections import OrderedDict
 from typing import List, Optional, Set
 
@@ -101,15 +102,13 @@ class MatchParser:
 
         # time
         start = list(filter(bool, map(util.normalize_text, table_row_selectors[11].css("::text").getall())))[0]
-        start_date = parse(start, fuzzy_with_tokens=True)[0]  # type: ignore # noqa
+        start_date = parse(start, fuzzy_with_tokens=True)[0] - datetime.timedelta(hours=8)  # type: ignore # noqa
 
         # stats
         links = tuple(
             filter(lambda a: a.startswith("/matchstat.cfm?id="), table_selector.css("a::attr(href)").getall())
         )
         match_id = util.parse_match_id_from_url(links[0])
-        # match_stat_url = f"/matchstat.cfm?id={match_id}"
-        # match_ou_stat_url = f"/matchoustat.cfm?id={match_id}"
 
         m = Match(
             match_id,
