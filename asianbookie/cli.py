@@ -3,15 +3,13 @@ import json
 import logging
 import time
 from collections import Counter, defaultdict
-from datetime import datetime
-from itertools import chain
-from typing import Dict, List, Optional, Set
+from datetime import datetime, timedelta
+from typing import Dict, Optional
 
 import click
 import requests
 
-from . import asianbookie, settings
-from .domain import AsianBookieUser
+from . import asianbookie, settings, util
 from .settings import setup
 
 setup()
@@ -29,26 +27,27 @@ def asianbookie_cli():
 def openbets():
     """Fetch asianbookie open bets"""
 
-    logger.info("[^] Searching for Open bets")
+    logger.info("[^] openbets3")
+    data = load_cache()
+    if data is None or data.get("user_bets") is None:
+        top_tipsters_response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
+        users = asianbookie.top_tipsters(top_tipsters_response, top100_limit=50)
+        matches_ = asianbookie.upcoming_matches()
+        users_ranks = asianbookie.matches_bet_users(matches_)
+        ab_users_ranks = set(filter(lambda ab_user: ab_user.rank in users_ranks, users))
+        user_bets = asianbookie.tipsters_open_bets(ab_users_ranks)
+        data = data or {}
+        data["user_bets"] = user_bets
+        save_cache(data)
+    else:
+        user_bets = data.get("user_bets")
 
-    top_tipsters_response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
-    users = set(asianbookie.top100_users(top_tipsters_response)[:50])
-    top10league_users = set(
-        chain(*asianbookie.top10_leagues(top_tipsters_response).values())
-    )  # type: Set[AsianBookieUser]
-    users.update(top10league_users)
-
-    user_big_bets = {}
-    user_bets = asianbookie.tipsters_open_bets(users)
-    for user, bets in user_bets.items():
-        big_bets = list(filter(lambda ub: ub.is_big_bet, bets))
-        if big_bets:
-            user_big_bets[str(user)] = big_bets
-
-    logger.debug(f"{json.dumps(user_big_bets, default=str)}")
+    user_big_bets = asianbookie.filter_big_bets(user_bets)
+    user_big_bets_str = {str(k): v for k, v in user_big_bets.items()}
+    logger.debug(f"{json.dumps(user_big_bets_str, default=str)}")
 
     process_bets(user_big_bets)
-    save_bets(user_big_bets)
+    save_bets(user_big_bets_str)
     logger.info("[*] Finishing Application")
     return 0
 
@@ -58,14 +57,24 @@ def matches():
     """Fetch asianbookie upcoming matches"""
 
     logger.info("[^] Searching for matches")
-    for match in asianbookie.upcoming_matches():
+    data = load_cache()
+    if data is None or data.get("matches") is None:
+        matches_ = asianbookie.upcoming_matches()
+        data = data or {}
+        data["matches"] = matches_
+        save_cache(data)
+    else:
+        matches_ = data.get("matches")
+
+    for match in matches_:
         match.start = match.start + (datetime.now() - datetime.utcnow())
         logger.info(f"[>] {match}")
     logger.info("[*] Finishing Application")
+
     return 0
 
 
-def process_bets(bets: Dict[str, List]) -> None:
+def process_bets(bets: asianbookie.UserBets) -> None:
     """
     Get user open bets
 
@@ -73,11 +82,9 @@ def process_bets(bets: Dict[str, List]) -> None:
     :return: user's Open bets
     """
     bet_markets = defaultdict(list)
-    bet_odds = defaultdict(set)
     for bet_list in bets.values():
         for bet in bet_list:
-            bet_markets[bet.teamA + " v " + bet.teamB].append(bet.market)
-            bet_odds[bet.teamA + " v " + bet.teamB].add(bet.odds)
+            bet_markets[bet.home + " v " + bet.away].append(bet.market)
 
     # most common
     print("[^] Open bets")
@@ -87,7 +94,7 @@ def process_bets(bets: Dict[str, List]) -> None:
         print(f"{match:>40} : {mc}")
 
 
-def save_bets(bets: Dict[str, List], filename: Optional[str] = None) -> None:
+def save_bets(bets: asianbookie.UserBets, filename: Optional[str] = None) -> None:
     """
     Get user open bets
 
@@ -100,3 +107,20 @@ def save_bets(bets: Dict[str, List], filename: Optional[str] = None) -> None:
 
     with open(filename, "w") as rf:
         json.dump(bets, rf, default=str)
+
+
+def load_cache() -> Optional[Dict]:
+    data = util.unpickle_data()
+    data = util.unpickle_data()
+    if data is not None:
+        expire = data.get("expire")  # type: datetime
+        logger.info(f"Loading from cache: {expire=}")
+        if expire < datetime.now():
+            return None
+    return data
+
+
+def save_cache(data: Dict, expire=3600):
+    data["created"] = datetime.now()
+    data["expire"] = datetime.now() + timedelta(seconds=expire)
+    util.pickle_data(data)

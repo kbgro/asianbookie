@@ -1,11 +1,15 @@
 import locale
+import os.path
+import pickle
 import re
 from contextlib import contextmanager
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from unicodedata import normalize
 from urllib.parse import parse_qs, urlencode, urlparse
 
 from parsel import Selector
+
+from asianbookie import settings
 
 
 def parse_player_url(url_text: str) -> str:
@@ -88,3 +92,15 @@ def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i : i + n]  # noqa: E203
+
+
+def pickle_data(data: Any) -> None:
+    with open(settings.PICKLE_FILE, "wb") as f:
+        pickle.dump(data, f)
+
+
+def unpickle_data() -> Any:
+    if os.path.getsize(settings.PICKLE_FILE) == 0:
+        return None
+    with open(settings.PICKLE_FILE, "rb") as f:
+        return pickle.load(f)

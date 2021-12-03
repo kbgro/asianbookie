@@ -8,6 +8,9 @@ ASIAN_BOOKIE_TOP_TIPSTERS_URL = "https://tipsters.asianbookie.com/index.cfm?top2
 DATA_DIR = Path(__file__).resolve(True).parent.parent / "data"
 LOG_DIR = Path(__file__).resolve(True).parent.parent / "logs"
 
+PICKLE_FILE = DATA_DIR / ".asianbookie_cache"
+LOG_FILE = LOG_DIR / "asianbookie.log"
+
 
 def setup():
     setup_data_directory()
@@ -16,7 +19,7 @@ def setup():
 
 def setup_logger():
     format_str = "%(asctime)s %(name)-12s %(levelname)-8s %(message)s"
-    log_file = LOG_DIR / "asianbookie.log"
+    log_file = LOG_FILE
 
     logging.basicConfig(
         level=logging.DEBUG,
@@ -39,3 +42,4 @@ def setup_logger():
 def setup_data_directory():
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
+    PICKLE_FILE.touch(exist_ok=True)
