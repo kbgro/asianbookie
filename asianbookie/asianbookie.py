@@ -3,15 +3,18 @@ from __future__ import annotations
 
 import logging
 import time
+from itertools import chain
 from typing import Dict, List, Optional, Set
 
 import requests
 from requests import Response
 
 from . import parsers, settings
-from .domain import AsianBookieUser, Bet
+from .domain import AsianBookieUser, Bet, Match
 
 logger = logging.getLogger("asianbookie")
+
+UserBets = Dict[AsianBookieUser, List[Bet]]
 
 
 def get_user_open_bets(user: AsianBookieUser) -> List[Bet]:
@@ -79,3 +82,54 @@ def tipsters_open_bets(tipsters: Set[AsianBookieUser], sleep_time: float = 0.5) 
         time.sleep(sleep_time)
 
     return user_bets
+
+
+def match_bet_users(match: Match) -> Set:
+    """
+    Return user rank of users with bet in a current match
+    :param match:
+    :return:
+    """
+    response = requests.get(f"{settings.ASIAN_BOOKIE_URL}/matchstat.cfm?id={match.id}")
+    return parsers.MatchBetUsersParser.parse(response.text)
+
+
+def matches_bet_users(matches: List[Match]) -> Set:
+    """
+    Return user rank of users with bet in any of the matches
+
+    :param matches: a list of matches
+    :return: a set of user ranks
+    """
+    ranks = set()
+    for match in matches:
+        ranks.update(match_bet_users(match))
+    return ranks
+
+
+def top_tipsters(response: Response, top100_limit: int = 50) -> Set[AsianBookieUser]:
+    """
+    Returns a list of top 50 tipsters and top 10 tipsters in leagues
+
+    :param top100_limit: a limit for top 100 tipsters
+    :param response: request response
+    :return: a list of top tipster
+    """
+    users = set(top100_users(response)[:50])
+    top10league_users = set(chain(*top10_leagues(response).values()))  # type: Set[AsianBookieUser]
+    users.update(top10league_users)
+    return users
+
+
+def filter_big_bets(user_bets: UserBets) -> UserBets:
+    """
+    Filter user bets and returns only bet marked `big bet`
+    :param user_bets: a dictionary of user and their bets
+    :return:  a dictionary of user and their bets
+    """
+    user_big_bets: UserBets = {}
+    for user, bets in user_bets.items():
+        big_bets = list(filter(lambda ub: ub.is_big_bet, bets))
+        if big_bets:
+            user_big_bets[user] = big_bets
+    return dict(user_big_bets)
