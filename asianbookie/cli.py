@@ -24,11 +24,12 @@ def asianbookie_cli():
 
 
 @asianbookie_cli.command()
-def openbets():
+@click.option("-fc", "--force-cached", is_flag=True)
+def openbets(force_cached):
     """Fetch asianbookie open bets"""
 
     logger.info("[^] openbets3")
-    data = load_cache()
+    data = load_cache(force_cached)
     if data is None or data.get("user_bets") is None:
         top_tipsters_response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
         users = asianbookie.top_tipsters(top_tipsters_response, top100_limit=50)
@@ -53,11 +54,13 @@ def openbets():
 
 
 @asianbookie_cli.command()
-def matches():
+@click.option("-fc", "--force-cached", is_flag=True)
+@click.option("-fd", "--force-download", is_flag=True)
+def matches(force_cached: bool, force_download: bool):
     """Fetch asianbookie upcoming matches"""
 
     logger.info("[^] Searching for matches")
-    data = load_cache()
+    data = load_cache(force_cached, force_download)
     if data is None or data.get("matches") is None:
         matches_ = asianbookie.upcoming_matches()
         data = data or {}
@@ -109,12 +112,16 @@ def save_bets(bets: asianbookie.UserBets, filename: Optional[str] = None) -> Non
         json.dump(bets, rf, default=str)
 
 
-def load_cache() -> Optional[Dict]:
-    data = util.unpickle_data()
+def load_cache(force_cached: bool = False, force_download: bool = False) -> Optional[Dict]:
+    if force_download:
+        return None
+
     data = util.unpickle_data()
     if data is not None:
         expire = data.get("expire")  # type: datetime
         logger.info(f"Loading from cache: {expire=}")
+        if force_cached:
+            return data
         if expire < datetime.now():
             return None
     return data

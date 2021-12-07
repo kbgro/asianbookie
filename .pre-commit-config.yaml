@@ -1,6 +1,5 @@
 exclude: 'docs|.git|.github|.tox|.idea|.vscode'
 default_stages: [ commit ]
-fail_fast: true
 
 repos:
     -   repo: https://github.com/Lucas-C/pre-commit-hooks
