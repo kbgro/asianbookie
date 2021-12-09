@@ -25,30 +25,32 @@ def asianbookie_cli():
 
 @asianbookie_cli.command()
 @click.option("-fc", "--force-cached", is_flag=True)
-def openbets(force_cached):
+@click.option("-fd", "--force-download", is_flag=True)
+def openbets(force_cached: bool, force_download: bool):
     """Fetch asianbookie open bets"""
 
     logger.info("[^] openbets3")
-    data = load_cache(force_cached)
+    data = load_cache(force_cached, force_download)
     if data is None or data.get("user_bets") is None:
         top_tipsters_response = requests.get(settings.ASIAN_BOOKIE_TOP_TIPSTERS_URL)
         users = asianbookie.top_tipsters(top_tipsters_response, top100_limit=50)
         matches_ = asianbookie.upcoming_matches()
-        users_ranks = asianbookie.matches_bet_users(matches_)
-        ab_users_ranks = set(filter(lambda ab_user: ab_user.rank in users_ranks, users))
-        user_bets = asianbookie.tipsters_open_bets(ab_users_ranks)
+        # users_ranks = asianbookie.matches_bet_users(matches_)
+        # ab_users_ranks = set(filter(lambda ab_user: ab_user.rank in users_ranks, users))
+        user_bets = asianbookie.tipsters_open_bets(users)
         data = data or {}
+        data["matches"] = matches_
         data["user_bets"] = user_bets
         save_cache(data)
     else:
-        user_bets = data.get("user_bets")
+        user_bets = data.get("user_bets")  # type: ignore
 
     user_big_bets = asianbookie.filter_big_bets(user_bets)
     user_big_bets_str = {str(k): v for k, v in user_big_bets.items()}
     logger.debug(f"{json.dumps(user_big_bets_str, default=str)}")
 
     process_bets(user_big_bets)
-    save_bets(user_big_bets_str)
+    save_bets(user_big_bets)
     logger.info("[*] Finishing Application")
     return 0
 
@@ -109,7 +111,7 @@ def save_bets(bets: asianbookie.UserBets, filename: Optional[str] = None) -> Non
         filename = str(settings.DATA_DIR / time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())) + ".json"
 
     with open(filename, "w") as rf:
-        json.dump(bets, rf, default=str)
+        json.dump({str(k): v for k, v in bets.items()}, rf, default=str)
 
 
 def load_cache(force_cached: bool = False, force_download: bool = False) -> Optional[Dict]:
