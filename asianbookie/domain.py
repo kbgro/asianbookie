@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from datetime import date, datetime
 from typing import List, Optional
 
@@ -136,6 +137,11 @@ class Bet:
 
     def __hash__(self):
         return hash((self.home, self.away, self.market, self.match.id, self.league, self.user.user_id))
+
+    @property
+    def bet_id(self) -> Optional[str]:
+        """Returns bet uuid if a bet belong to a user."""
+        return uuid.uuid5(uuid.NAMESPACE_X500, f"{self.__str__()}{self.user.user_id}").__str__() if self.user else None
 
 
 class Match:
