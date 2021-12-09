@@ -5,10 +5,12 @@ from pathlib import Path
 ASIAN_BOOKIE_URL = "https://tipsters.asianbookie.com"
 ASIAN_BOOKIE_TOP_TIPSTERS_URL = "https://tipsters.asianbookie.com/index.cfm?top20=1"
 
-DATA_DIR = Path(__file__).resolve(True).parent.parent / "data"
-LOG_DIR = Path(__file__).resolve(True).parent.parent / "logs"
+APP_USER_DIR = Path.home() / ".asianbookie"
 
-PICKLE_FILE = DATA_DIR / ".asianbookie_cache"
+DATA_DIR = APP_USER_DIR / "data"
+LOG_DIR = APP_USER_DIR / "logs"
+
+PICKLE_FILE = APP_USER_DIR / ".asianbookie_cache"
 LOG_FILE = LOG_DIR / "asianbookie.log"
 
 
@@ -40,6 +42,7 @@ def setup_logger():
 
 
 def setup_data_directory():
+    os.makedirs(APP_USER_DIR, exist_ok=True)
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(LOG_DIR, exist_ok=True)
     PICKLE_FILE.touch(exist_ok=True)
