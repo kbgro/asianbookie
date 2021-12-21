@@ -10,7 +10,7 @@ from asianbookie.domain import AsianBookieUser, Bet, Match
 
 __author__ = """Daniel Ndegwa"""
 __email__ = "daniendegwa@gmail.com"
-__version__ = "3.1.1"
+__version__ = "3.2.0"
 
 __all__ = [
     "AsianBookieUser",
