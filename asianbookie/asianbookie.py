@@ -115,9 +115,17 @@ def top_tipsters(response: Response, top100_limit: int = 50) -> Set[AsianBookieU
     :param response: request response
     :return: a list of top tipster
     """
-    users = set(top100_users(response)[:50])
-    top10league_users = set(chain(*top10_leagues(response).values()))  # type: Set[AsianBookieUser]
-    users.update(top10league_users)
+    _all_users = top100_users(response)
+    user_map = {user.user_id: user for user in _all_users}  # type: Dict[int, AsianBookieUser]
+    top_tens_with_rank = list(map(lambda u: user_map.get(u.user_id), chain(*top10_leagues(response).values())))
+    top_tens_filtered = set(filter(bool, top_tens_with_rank))  # type: ignore
+
+    # top_tens_100 = list(filter(lambda u: u.rank <= top100_limit, top_tens))
+    users = set(_all_users[:top100_limit])
+    users.update(top_tens_filtered)  # type: ignore
+
+    logger.info(f"Top tipsters: {len(users)}")
+
     return users
 
 
